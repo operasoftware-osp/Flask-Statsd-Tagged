@@ -1,6 +1,6 @@
 # Flask-Statsd-Tagged
 
-This module is meant for use with the statsd plugin in Telegraf, which then report data to InfluxDB. It will
+This module is meant for use with the statsd plugin in Telegraf, which then report data to InfluxDB.
 
 # Install
 ```bash
