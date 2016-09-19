@@ -1,11 +1,13 @@
-# Flask-Statsd
-收集每个请求的性能数据，发送到 statsd。数据的key是把 url_route 里面的匹配部分删去，
-把 / 替换成 . ，并且在前面增加 app_name 。同时会自动增加 `status_code` `server`
-tag。
+# Flask-Statsd-Tagged
+
+This module is meant for use with the statsd plugin in Telegraf, which then report data to InfluxDB. It will
 
 # Install
 ```bash
-pip install flask-statsd-tags
+pip install flask-statsd-tagged
+```
+
+FlaskStatsdTagged(app)
 ```
 
 # Send data
@@ -19,34 +21,42 @@ def device_download(device):
     pass
 ```
 
-* 访问 `/app/download`，会自动向 Statsd 发送 
+* Example data submitted via statsd protocol for a request to `/app/download`
 
     ```
-    myapp.app.download.count,status_code=200,server=vagrant-ubuntu-trusty-64:1|c
-    myapp.app.download.time,status_code=200,server=vagrant-ubuntu-trusty-64:0.467062|ms
-    myapp.request.count,status_code=200,server=vagrant-ubuntu-trusty-64:1|c
-    myapp.request.time,status_code=200,server=vagrant-ubuntu-trusty-64:0.467062|ms
+    flaskrequest,status_code=200,server=vagrant-ubuntu-trusty-64,path=/app/download:1|c
+    flaskrequest,status_code=200,server=vagrant-ubuntu-trusty-64:0.467062|ms
     ```
 
-* 访问 `/app/android/stats`，会自动发送
+* Example data submitted via statsd protocol for a request to `/app/android/stats`
 
     ```
-    myapp.app.stats.count,status_code=200,server=vagrant-ubuntu-trusty-64:1|c
-    myapp.app.stats.time,status_code=200,server=vagrant-ubuntu-trusty-64:0.467062|ms
-    myapp.request.count,status_code=200,server=vagrant-ubuntu-trusty-64:1|c
-    myapp.request.time,status_code=200,server=vagrant-ubuntu-trusty-64:0.467062|ms
+    flaskrequest,status_code=200,server=vagrant-ubuntu-trusty-64:1,path=/app/android/stats|c
+    flaskrequest,status_code=200,server=vagrant-ubuntu-trusty-64:0.467062,path=/app/android/stats|ms
     ```
 
 
-# 使用
+# Using it in your Flask application
 ```python
 from flask import Flask
-from flask.ext.statsd import FlaskStatsd
+from flask.ext.statsd_tagged import FlaskStatsdTagged
 
 app = Flask(__name__)
-FlaskStatsd(app=app, host='localhost', port=8125, prefix='')
+FlaskStatsdTagged(app=app, extra_tags={'bazinga':'sheldon')
 
+Any tags added to the dictionary g.statsd_tags will also be added as tags to the metrics. E.g
+
+```python
+from flask import g
+
+@route('/download')
+def download():
+    g.statsd_tags = {'filename':'somename.tgz'}
 ```
 
-# Statsd
-Statsd 使用的 Influxdb 扩展的格式，支持 tag。
+# Thankyou
+
+This is a fork of https://github.com/gfreezy/Flask-Statsd. Thankyou! :-)
+
+
+

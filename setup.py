@@ -2,15 +2,15 @@ from setuptools import setup
 
 
 setup(
-    name='flask-statsd-tags',
-    version='0.1.6',
-    url='https://github.com/gfreezy/flask-statsd/',
+    name='Flask-StatsdTagged',
+    version='0.2',
+    url='https://github.com/forsberg/Flask-Statsd-Tagged/',
     license='BSD',
-    author='gfreezy',
-    author_email='gfreezy@gmail.com',
-    description='Flask extention for sending statsd data',
+    author='Erik Forsberg',
+    author_email='forsberg@efod.se',
+    description='Flask extension for sending statsd data with tags, for use with telegraf statsd plugin',
     long_description=__doc__,
-    py_modules=['flask_statsd'],
+    py_modules=['flask_statsd_tagged'],
     zip_safe=False,
     include_package_data=True,
     platforms='any',
