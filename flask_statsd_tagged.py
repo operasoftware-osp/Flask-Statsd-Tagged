@@ -47,15 +47,10 @@ class FlaskStatsdTagged(object):
         ctx.request_begin_at = time.time()
         ctx.resource_before = resource.getrusage(resource.RUSAGE_SELF)
 
-        print "resoure_before", ctx.resource_before
-
     def after_request(self, resp):
         ctx = stack.top
         period = (time.time() - ctx.request_begin_at) * 1000
         rusage = resource.getrusage(resource.RUSAGE_SELF)
-
-        print "rusage after", rusage
-
 
         tags = dict(self.extra_tags)
         tags.update({"path":request.path or "notfound", "server": self.hostname, "status_code": resp.status_code})
