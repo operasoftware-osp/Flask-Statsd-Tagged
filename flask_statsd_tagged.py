@@ -46,6 +46,10 @@ class FlaskStatsdTagged(object):
         ctx = stack.top
         ctx.request_begin_at = time.time()
         ctx.resource_before = resource.getrusage(resource.RUSAGE_SELF)
+        try:
+            ctx.content_length = int(request.headers["content-length"])
+        except ValueError:
+            ctx.content_length = 0
 
     def after_request(self, resp):
         ctx = stack.top
@@ -66,11 +70,9 @@ class FlaskStatsdTagged(object):
             pipe.timing(add_tags("flask_usertime", **tags), 1000 * (rusage.ru_utime - ctx.resource_before.ru_utime))
             pipe.timing(add_tags("flask_systime", **tags), 1000 * (rusage.ru_stime - ctx.resource_before.ru_stime))
 
-            flask_request_datasize = add_tags("flask_request_datasize", **tags)
-            request_data_size = len(request.data)
-
-            pipe.incr(flask_request_datasize, request_data_size)
-            pipe.gauge(flask_request_datasize, request_data_size)
+            if ctx.content_length != 0:
+                pipe.incr(add_tags("flask_request_datarate", **tags), ctx.content_length)
+                pipe.gauge(add_tags("flask_request_datasizegauge", **tags), ctx.content_length)
 
         return resp
 
