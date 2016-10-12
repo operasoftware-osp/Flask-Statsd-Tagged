@@ -66,7 +66,11 @@ class FlaskStatsdTagged(object):
             pipe.timing(add_tags("flask_usertime", **tags), 1000 * (rusage.ru_utime - ctx.resource_before.ru_utime))
             pipe.timing(add_tags("flask_systime", **tags), 1000 * (rusage.ru_stime - ctx.resource_before.ru_stime))
 
-            pipe.incr(add_tags("flask_request_datasize", **tags), len(request.data))
+            flask_request_datasize = add_tags("flask_request_datasize", **tags)
+            request_data_size = len(request.data)
+
+            pipe.incr(flask_request_datasize, request_data_size)
+            pipe.gauge(flask_request_datasize, request_data_size)
 
         return resp
 
