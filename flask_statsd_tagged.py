@@ -2,6 +2,7 @@ import re
 import time
 import sys
 import socket
+import resource
 from flask import request, g
 from flask import _app_ctx_stack as stack
 from statsd import StatsClient
@@ -44,17 +45,33 @@ class FlaskStatsdTagged(object):
     def before_request(self):
         ctx = stack.top
         ctx.request_begin_at = time.time()
+        ctx.resource_before = resource.getrusage(resource.RUSAGE_SELF)
+
+        print "resoure_before", ctx.resource_before
 
     def after_request(self, resp):
         ctx = stack.top
         period = (time.time() - ctx.request_begin_at) * 1000
+        rusage = resource.getrusage(resource.RUSAGE_SELF)
+
+        print "rusage after", rusage
+
+
         tags = dict(self.extra_tags)
         tags.update({"path":request.path or "notfound", "server": self.hostname, "status_code": resp.status_code})
         tags.update(_get_context_tags())
         with self.pipeline() as pipe:
-            metric = add_tags("flaskrequest", **tags)
-            pipe.incr(metric)
-            pipe.timing(metric, period)
+            flaskrequest = add_tags("flaskrequest", **tags)
+            pipe.incr(flaskrequest)
+            pipe.timing(flaskrequest, period)
+
+            # NOTE: The resource-based timing will (probably) only be relevant if each flask request
+            # is handled by a single process, i.e. no threads.
+
+            pipe.timing(add_tags("flask_usertime", **tags), 1000 * (rusage.ru_utime - ctx.resource_before.ru_utime))
+            pipe.timing(add_tags("flask_systime", **tags), 1000 * (rusage.ru_stime - ctx.resource_before.ru_stime))
+
+            pipe.incr(add_tags("flask_request_datasize", **tags), len(request.data))
 
         return resp
 
