@@ -1,11 +1,12 @@
-import re
 import time
-import sys
 import socket
 import resource
 from flask import request, g
 from flask import _app_ctx_stack as stack
+from logging import getLogger
 from statsd import StatsClient
+
+log = getLogger(__name__)
 
 
 def add_tags(metric, **tags):
@@ -13,6 +14,7 @@ def add_tags(metric, **tags):
         return metric
     tag_str = ','.join([('%s=%s' % (k, v)) for k, v in tags.items()])
     return '%s,%s' % (metric, tag_str)
+
 
 def _get_context_tags():
     try:
@@ -35,6 +37,7 @@ class FlaskStatsdTagged(object):
     def init_app(self, app):
         app.before_request(self.before_request)
         app.after_request(self.after_request)
+        app.teardown_request(self.teardown_request)
         self.connection = self.connect()
 
     def connect(self):
@@ -53,11 +56,17 @@ class FlaskStatsdTagged(object):
 
     def after_request(self, resp):
         ctx = stack.top
+        if getattr(ctx, 'statsd_already_executed', False):
+            return resp  # This would happen when teardown_request is called after after_request
+        ctx.statsd_already_executed = True
+
         period = (time.time() - ctx.request_begin_at) * 1000
         rusage = resource.getrusage(resource.RUSAGE_SELF)
 
         tags = dict(self.extra_tags)
-        tags.update({"path":request.path or "notfound", "server": self.hostname, "status_code": resp.status_code})
+        tags.update({"path": request.path or "notfound",
+                     "server": self.hostname,
+                     "status_code": resp.status_code})
         tags.update(_get_context_tags())
         with self.pipeline() as pipe:
             flaskrequest = add_tags("flaskrequest", **tags)
@@ -75,6 +84,16 @@ class FlaskStatsdTagged(object):
                 pipe.gauge(add_tags("flask_request_datasizegauge", **tags), ctx.content_length)
 
         return resp
+
+    def teardown_request(self, exception=None):
+        # Note that this method is expected to never fail
+        class Response500(object):
+            status_code = 500
+        try:
+            self.after_request(Response500())
+        except:
+            log.exception("Error while tearing down request. "
+                          "This has been recovered from but statsd stuff might not have executed.")
 
     def pipeline(self):
         return self.connection.pipeline()
