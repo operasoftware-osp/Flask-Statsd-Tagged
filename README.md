@@ -43,15 +43,27 @@ from flask.ext.statsd_tagged import FlaskStatsdTagged
 
 app = Flask(__name__)
 FlaskStatsdTagged(app=app, extra_tags={'bazinga':'sheldon')
+```
 
 Any tags added to the dictionary g.statsd_tags will also be added as tags to the metrics. E.g
 
 ```python
 from flask import g
+from flask.ext.statsd_tagged import incr, timing, gauge, tag
 
 @route('/download')
 def download():
-    g.statsd_tags = {'filename':'somename.tgz'}
+    # Note that the new interface still uses flask.g object underneath
+    
+    # settings tags with legacy interface:
+    g.statsd_tags = {'filename':'somename.tgz', 'worker': 'Herkules'}  
+    # or better (equivalently) in new way:
+    tag('filename', 'somename.tgz')
+    tag('worker', 'Herkules')
+    
+    timing('compression_time', 500)
+    incr('disk_reads', 1)
+    gauge('current_temperature', 15)
 ```
 
 # Thankyou

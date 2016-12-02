@@ -9,6 +9,36 @@ from statsd import StatsClient
 log = getLogger(__name__)
 
 
+def incr(name, value=1):
+    _add_metric_to_request('incr', name, value)
+
+
+def timing(name, value):
+    _add_metric_to_request('timing', name, value)
+
+
+def gauge(name, value):
+    _add_metric_to_request('gauge', name, value)
+
+
+def tag(name, value):
+    if not hasattr(g, 'statsd_tags'):
+        g.statsd_tags = {}
+    g.statsd_tags[name] = value
+
+
+def _add_metric_to_request(metric_type, metric_name, metric_value):
+    if not hasattr(g, 'statsd_metrics'):
+        g.statsd_metrics = {
+            'timing': [],
+            'incr': [],
+            'gauge': [],
+        }
+    assert metric_type in g.statsd_metrics.keys()
+
+    g.statsd_metrics[metric_type].append((metric_name, metric_value))
+
+
 def add_tags(metric, **tags):
     if not metric:
         return metric
@@ -83,7 +113,15 @@ class FlaskStatsdTagged(object):
                 pipe.incr(add_tags("flask_request_datarate", **tags), ctx.content_length)
                 pipe.gauge(add_tags("flask_request_datasizegauge", **tags), ctx.content_length)
 
+            self._send_user_metrics(pipe, tags)
         return resp
+
+    @staticmethod
+    def _send_user_metrics(pipe, tags):
+        metrics = getattr(g, 'statsd_metrics', {})
+        for metric_type, metric_names_and_values in metrics.items():
+            for metric_name, metric_value in metric_names_and_values:
+                getattr(pipe, metric_type)(add_tags(metric_name, **tags), metric_value)
 
     def teardown_request(self, exception=None):
         # Note that this method is expected to never fail
