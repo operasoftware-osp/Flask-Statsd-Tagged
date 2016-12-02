@@ -43,6 +43,7 @@ from flask.ext.statsd_tagged import FlaskStatsdTagged
 
 app = Flask(__name__)
 FlaskStatsdTagged(app=app, extra_tags={'bazinga':'sheldon')
+```
 
 Any tags added to the dictionary g.statsd_tags will also be added as tags to the metrics. E.g
 
