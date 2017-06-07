@@ -42,7 +42,7 @@ def _add_metric_to_request(metric_type, metric_name, metric_value):
 def add_tags(metric, **tags):
     if not metric:
         return metric
-    tag_str = ','.join([('%s=%s' % (k, v)) for k, v in tags.items()])
+    tag_str = ','.join([('%s=%s' % (key, tags[key])) for key in sorted(tags.keys())])
     return '%s,%s' % (metric, tag_str)
 
 
@@ -57,7 +57,6 @@ class FlaskStatsdTagged(object):
 
     def __init__(self, app=None, host='localhost', port=8125, extra_tags={}):
         self.app = app
-        self.hostname = socket.gethostname()
         self.statsd_host = host
         self.statsd_port = port
         self.extra_tags = extra_tags
@@ -95,7 +94,6 @@ class FlaskStatsdTagged(object):
 
         tags = dict(self.extra_tags)
         tags.update({"path": request.path or "notfound",
-                     "server": self.hostname,
                      "status_code": resp.status_code})
         tags.update(_get_context_tags())
         with self.pipeline() as pipe:
