@@ -96,7 +96,7 @@ class FlaskStatsdTagged(object):
         ctx.resource_before = resource.getrusage(resource.RUSAGE_SELF)
         try:
             ctx.content_length = int(request.headers["content-length"])
-        except ValueError:
+        except (ValueError, KeyError):
             ctx.content_length = 0
 
     def after_request(self, resp):
