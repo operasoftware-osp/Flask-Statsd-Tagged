@@ -50,7 +50,11 @@ def _get_context_tags():
 
 
 def _trim_path(path, trim):
-    """This small function can save your InfluxDB. Since path is reported to influx as a tag, when something goes wrong or an adversary vulnerability scan happens you might report milions of paths. This will result in InfluxDB choking on cardinality caused by just one small tag. This function allows to prevent that, shortening the tag to reduce space of divverent possible values.
+    """This small function can save your InfluxDB.
+    Since path is reported to influx as a tag, when something goes wrong or an adversary
+    vulnerability scan happens you might report milions of paths. This will result in InfluxDB
+    choking on cardinality caused by just one small tag. This function allows to prevent that,
+    shortening the tag to reduce space of divverent possible values.
     """
     if trim:
         return "/".join(path.split("/")[: 1 + int(trim)])
