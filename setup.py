@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="Flask-StatsdTagged",
-    version="0.13",
+    version="0.14",
     url="https://github.com/forsberg/Flask-Statsd-Tagged/",
     license="BSD",
     author="Erik Forsberg",
